@@ -44,8 +44,6 @@ Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('p
 
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe']);
 Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe']);
-Route::get('/blogs', [BlogController::class, 'index']);
-Route::get('/blogs/{id}', [BlogController::class, 'show']);
 Route::get('/products/trending', [ProductController::class, 'getTrendingProducts']);
 Route::get('products', [ProductController::class, 'index']);
 Route::get('products/{id}', [ProductController::class, 'show']);
@@ -154,10 +152,18 @@ Route::middleware(['auth:api', 'admin'])->prefix('admin')->group(function () {
 
     Route::get('/newsletter/subscribers', [NewsletterController::class, 'index']);
 
+    Route::get('/blogs', [BlogController::class, 'index']);
+    Route::get('/blogs/{id}', [BlogController::class, 'show']);
     Route::post('/blogs', [BlogController::class, 'store']);
     Route::post('/blogs/{id}', [BlogController::class, 'update']);
     Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
     Route::delete('/blogs/media/{id}', [BlogController::class, 'deleteMedia']);
+
+    Route::post('/blog-categories', [BlogController::class, 'storeCategory']);
+Route::get('/blog-categories', [BlogController::class, 'indexCategory']);
+Route::get('/blog-categories/{id}', [BlogController::class, 'showCategory']);
+Route::put('/blog-categories/{id}', [BlogController::class, 'updateCategory']);
+Route::delete('/blog-categories/{id}', [BlogController::class, 'destroyCategory']);
 
     Route::post('products', [ProductController::class, 'store']);
     Route::post('products/{id}', [ProductController::class, 'update']);

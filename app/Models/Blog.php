@@ -9,12 +9,11 @@ class Blog extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'content', 'user_id'];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    protected $fillable = [
+        'title',
+        'content',
+        'user_id',
+    ];
 
     public function media()
     {
@@ -26,9 +25,8 @@ class Blog extends Model
         return $this->belongsToMany(Product::class);
     }
 
-    public function creator()
+    public function categories()
     {
-        return $this->belongsTo(Creator::class);
+        return $this->belongsToMany(BlogCategory::class);
     }
-    
 }
