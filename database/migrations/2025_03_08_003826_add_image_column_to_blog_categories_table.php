@@ -13,7 +13,6 @@ class AddImageColumnToBlogCategoriesTable extends Migration
             $table->string('image')->nullable()->after('name'); // Add the image column
         });
     }
-
     public function down()
     {
         Schema::table('blog_categories', function (Blueprint $table) {
