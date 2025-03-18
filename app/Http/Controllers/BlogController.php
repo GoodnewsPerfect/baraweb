@@ -132,16 +132,43 @@ class BlogController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:blog_categories',
+            'image' => 'nullable', 
+            'image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
-        $category = BlogCategory::create([
+    
+        $data = [
             'name' => $request->name,
-        ]);
-
+        ];
+    
+        $imagePaths = []; 
+    
+        if ($request->hasFile('image')) {
+            $images = $request->file('image');
+    
+            if (is_array($images)) {
+                foreach ($images as $image) {
+                    $imagePath = $image->store('blog_category_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            } else {
+                $imagePath = $images->store('blog_category_images', 'public');
+                $imagePaths[] = $imagePath;
+            }
+    
+            if (count($imagePaths) > 0) {
+                $data['image'] = json_encode($imagePaths); 
+            }
+        }
+         else {
+            $data['image'] = null;
+        }
+    
+        $category = BlogCategory::create($data);
+    
         return response()->json([
             'message' => 'Blog category created successfully',
             'category' => $category
@@ -149,42 +176,77 @@ class BlogController extends Controller
     }
 
     public function updateCategory(Request $request, $id)
-{
-    $category = BlogCategory::findOrFail($id);
-
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255|unique:blog_categories,name,' . $id,
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
-    }
-
-    $data = []; 
-
-    if ($request->has('name')) {
-        $data['name'] = $request->name;
-    }
-
-    if ($request->hasFile('image')) {
-
-        if ($category->image) {
-            Storage::disk('public')->delete($category->image);
+    {
+        $category = BlogCategory::findOrFail($id);
+    
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:blog_categories,name,' . $id,
+            'image' => 'nullable',
+            'image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image_base64' => 'nullable|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
-
-        $imagePath = $request->file('image')->store('blog_category_images', 'public');
-        $data['image'] = $imagePath;
+    
+        $category->name = $request->input('name');
+        
+        if ($request->hasFile('image')) {
+            if ($category->image) {
+                $oldImages = json_decode($category->image, true);
+                if (is_array($oldImages)) {
+                    foreach ($oldImages as $oldImage) {
+                        if (Storage::disk('public')->exists($oldImage)) {
+                            Storage::disk('public')->delete($oldImage);
+                        }
+                    }
+                }
+            }
+            
+            $imagePaths = [];
+            $images = $request->file('image');
+            
+            if (is_array($images)) {
+                foreach ($images as $image) {
+                    $imagePath = $image->store('blog_category_images', 'public');
+                    $imagePaths[] = $imagePath;
+                }
+            } else {
+                $imagePath = $images->store('blog_category_images', 'public');
+                $imagePaths[] = $imagePath;
+            }
+            
+            $category->image = json_encode($imagePaths);
+        }
+        else if ($request->has('image_base64')) {
+            if ($category->image) {
+                $oldImages = json_decode($category->image, true);
+                if (is_array($oldImages)) {
+                    foreach ($oldImages as $oldImage) {
+                        if (Storage::disk('public')->exists($oldImage)) {
+                            Storage::disk('public')->delete($oldImage);
+                        }
+                    }
+                }
+            }
+            
+            $imageData = $request->input('image_base64');
+            $extension = explode('/', mime_content_type($imageData))[1];
+            $imageData = substr($imageData, strpos($imageData, ',') + 1);
+            $imageName = 'blog_category_images/' . uniqid() . '.' . $extension;
+            Storage::disk('public')->put($imageName, base64_decode($imageData));
+            
+            $category->image = json_encode([$imageName]);
+        }
+    
+        $category->save();
+    
+        return response()->json([
+            'message' => 'Blog category updated successfully',
+            'category' => $category
+        ]);
     }
-
-
-    $category->update($data);
-
-    return response()->json([
-        'message' => 'Blog category updated successfully',
-        'category' => $category->load('imageUrl')
-    ]);
-}
 
     public function showCategory($id)
     {
