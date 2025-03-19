@@ -163,15 +163,23 @@ class BlogController extends Controller
                 $data['image'] = json_encode($imagePaths); 
             }
         }
-         else {
+        else {
             $data['image'] = null;
         }
     
         $category = BlogCategory::create($data);
+        
+        $responseCategory = $category->toArray();
+        if ($category->image) {
+            $responseCategory['image'] = json_decode($category->image);
+            if (count($responseCategory['image']) === 1) {
+                $responseCategory['image'] = $responseCategory['image'][0];
+            }
+        }
     
         return response()->json([
             'message' => 'Blog category created successfully',
-            'category' => $category
+            'category' => $responseCategory
         ], 201);
     }
 
@@ -241,10 +249,18 @@ class BlogController extends Controller
         }
     
         $category->save();
+        
+        $responseCategory = $category->toArray();
+        if ($category->image) {
+            $responseCategory['image'] = json_decode($category->image);
+            if (count($responseCategory['image']) === 1) {
+                $responseCategory['image'] = $responseCategory['image'][0];
+            }
+        }
     
         return response()->json([
             'message' => 'Blog category updated successfully',
-            'category' => $category
+            'category' => $responseCategory
         ]);
     }
 
