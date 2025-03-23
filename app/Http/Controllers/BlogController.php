@@ -136,20 +136,18 @@ class BlogController extends Controller
             'limit' => 'nullable|integer|min:1|max:50',
             'category_id' => 'nullable|exists:blog_categories,id',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
+    
         $period = $request->period ?? 'week';
         $limit = $request->limit ?? 10;
-
-        $query = Blog::with(['media', 'products', 'categories', 'user'])
-            ->select('blogs.*')
+    
+        $query = Blog::select('blogs.id')
             ->leftJoin('blog_views', 'blogs.id', '=', 'blog_views.blog_id')
             ->groupBy('blogs.id');
-
-        // Filter by time period
+    
         if ($period !== 'all') {
             $dateFrom = now();
             
@@ -173,12 +171,25 @@ class BlogController extends Controller
                 $q->where('blog_categories.id', $request->category_id);
             });
         }
-
-        $blogs = $query->addSelect(DB::raw('COUNT(blog_views.id) as view_count'))
+    
+        $blogIds = $query->addSelect(DB::raw('COUNT(blog_views.id) as view_count'))
             ->orderBy('view_count', 'desc')
             ->orderBy('blogs.created_at', 'desc')
             ->limit($limit)
-            ->get();
+            ->pluck('view_count', 'blogs.id');
+        
+        $orderedIds = array_keys($blogIds->toArray());
+        $blogs = Blog::with(['media', 'products', 'categories', 'user'])
+            ->whereIn('id', $orderedIds)
+            ->get()
+            ->sortBy(function($blog) use ($orderedIds) {
+                return array_search($blog->id, $orderedIds);
+            })
+            ->values();
+        
+        foreach ($blogs as $blog) {
+            $blog->view_count = $blogIds[$blog->id];
+        }
         
         return response()->json([
             'trending_blogs' => $blogs,
