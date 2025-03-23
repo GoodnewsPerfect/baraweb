@@ -222,4 +222,5 @@ Route::delete('/blog-categories/{id}', [BlogController::class, 'destroyCategory'
     Route::put('/orders/{id}/status', [OrderController::class, 'updateOrderStatus']);
 });
 Route::get('/blogs', [BlogController::class, 'index']);
+Route::get('/blogs/trending', [BlogController::class, 'trending']);
 Route::get('/blogs/{id}', [BlogController::class, 'show']);

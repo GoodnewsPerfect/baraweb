@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class BlogController extends Controller
 {
@@ -115,6 +116,7 @@ class BlogController extends Controller
         $blog = Blog::with(['media', 'products', 'categories'])->findOrFail($id); 
         return response()->json($blog);
     }
+    
     public function index(Request $request)
     {
         $query = Blog::with(['media', 'products', 'categories']); 
@@ -127,6 +129,62 @@ class BlogController extends Controller
         return response()->json($blogs);
     }
 
+    public function trending(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'period' => 'nullable|string|in:day,week,month,all',
+            'limit' => 'nullable|integer|min:1|max:50',
+            'category_id' => 'nullable|exists:blog_categories,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $period = $request->period ?? 'week';
+        $limit = $request->limit ?? 10;
+
+        $query = Blog::with(['media', 'products', 'categories', 'user'])
+            ->select('blogs.*')
+            ->leftJoin('blog_views', 'blogs.id', '=', 'blog_views.blog_id')
+            ->groupBy('blogs.id');
+
+        // Filter by time period
+        if ($period !== 'all') {
+            $dateFrom = now();
+            
+            switch ($period) {
+                case 'day':
+                    $dateFrom = $dateFrom->subDay();
+                    break;
+                case 'week':
+                    $dateFrom = $dateFrom->subWeek();
+                    break;
+                case 'month':
+                    $dateFrom = $dateFrom->subMonth();
+                    break;
+            }
+            
+            $query->where('blog_views.created_at', '>=', $dateFrom);
+        }
+        
+        if ($request->has('category_id')) {
+            $query->whereHas('categories', function($q) use ($request) {
+                $q->where('blog_categories.id', $request->category_id);
+            });
+        }
+
+        $blogs = $query->addSelect(DB::raw('COUNT(blog_views.id) as view_count'))
+            ->orderBy('view_count', 'desc')
+            ->orderBy('blogs.created_at', 'desc')
+            ->limit($limit)
+            ->get();
+        
+        return response()->json([
+            'trending_blogs' => $blogs,
+            'period' => $period
+        ]);
+    }
 
     public function storeCategory(Request $request)
     {
