@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Google Sign-In</title>
+    <meta name="google-signin-client_id" content="1051481052590-pcg9vdq4nj11cbhfk7ts87hcjppsi76n.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+      function handleCredentialResponse(response) {
+        console.log("ID Token: " + response.credential);
+        // Copy this token to Postman
+      }
+
+      window.onload = function () {
+        google.accounts.id.initialize({
+          client_id: "1051481052590-pcg9vdq4nj11cbhfk7ts87hcjppsi76n.apps.googleusercontent.com",
+          callback: handleCredentialResponse,
+        });
+        google.accounts.id.renderButton(
+          document.getElementById("buttonDiv"),
+          { theme: "outline", size: "large" }
+        );
+      };
+    </script>
+  </head>
+  <body>
+    <div id="buttonDiv"></div>
+  </body>
+</html>

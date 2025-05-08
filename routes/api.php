@@ -24,11 +24,13 @@ use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\CreatorController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Socialite\Facades\Socialite;
 
 // Public routes
 Route::get('/', function () {
     return 'bara web test';
 });
+Route::post('/auth/google', [AuthController::class, 'googleLogin']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
@@ -40,6 +42,7 @@ Route::get('reset-password/{token}', function (string $token) {
 })->name('password.reset');    
 Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
 Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
 
 
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe']);
@@ -224,3 +227,4 @@ Route::delete('/blog-categories/{id}', [BlogController::class, 'destroyCategory'
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/trending', [BlogController::class, 'trending']);
 Route::get('/blogs/{id}', [BlogController::class, 'show']);
+
